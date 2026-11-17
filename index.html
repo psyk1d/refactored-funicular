@@ -1,0 +1,1296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>:root{color-scheme:light}</style>
+</head>
+<body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Reel Framer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600&family=Poppins:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Layout: a stepped tool on the left, a sticky 9:16 preview on the right (preview first on phones). */
+  :root{
+    --bg:#EDF2F1; --surface:#FFFFFF; --surface-2:#F5F8F7; --line:#D5DFDD; --fg:#0D1A19; --muted:#566866;
+    --accent:#0D7A79; --accent-fg:#FFFFFF; --accent-soft:#D9EFEC; --danger:#B3261E; --ok:#17794A;
+    --font-head:'Space Grotesk',Inter,system-ui,sans-serif;
+    --font-body:Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+    --bg:#0A1211; --surface:#101C1A; --surface-2:#0C1615; --line:#1F322F; --fg:#E5F0EE; --muted:#8CA4A0;
+    --accent:#3FD0C5; --accent-fg:#04201E; --accent-soft:#12332F; --danger:#FF8F86; --ok:#72D8A3; color-scheme:dark}}
+  :root[data-theme="dark"]{
+    --bg:#0A1211; --surface:#101C1A; --surface-2:#0C1615; --line:#1F322F; --fg:#E5F0EE; --muted:#8CA4A0;
+    --accent:#3FD0C5; --accent-fg:#04201E; --accent-soft:#12332F; --danger:#FF8F86; --ok:#72D8A3; color-scheme:dark}
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--font-body)}
+  .wrap{max-width:1180px;margin:0 auto;padding-block:24px 56px;
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .top{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+  .mark{flex:none;width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:
+    linear-gradient(var(--accent),var(--accent)) 50% 58%/58% 36% no-repeat,
+    linear-gradient(var(--line),var(--line)) 50% 18%/58% 8% no-repeat,
+    linear-gradient(var(--line),var(--line)) 50% 88%/30% 6% no-repeat, var(--surface)}
+  h1{margin:0;font:600 22px/1.2 var(--font-head);letter-spacing:-.01em}
+  .top p{margin:2px 0 0;color:var(--muted);font-size:14px;text-wrap:balance}
+
+  .app{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
+  .steps{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .stage{position:sticky;top:max(16px,env(safe-area-inset-top,0px));min-width:0}
+  @media(max-width:900px){
+    .app{grid-template-columns:minmax(0,1fr)}
+    .stage{position:static;order:-1}
+  }
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;min-width:0}
+  .card h2{display:flex;align-items:center;gap:10px;margin:0 0 14px;font:600 16px/1.3 var(--font-head)}
+  .n{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font:600 12px/1 var(--font-head)}
+  .sub{margin:16px 0 8px;font:600 11.5px/1.2 var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .sub:first-of-type{margin-top:0}
+
+  label{display:flex;justify-content:space-between;gap:8px;margin:12px 0 5px;font-size:13px;color:var(--muted)}
+  label b{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+  select,input[type=number],input[type=text],textarea{width:100%;min-width:0;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit}
+  textarea{min-height:104px;resize:vertical;line-height:1.5}
+  input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+  .grid2>div{min-width:0}
+  .check{display:flex;justify-content:flex-start;align-items:center;gap:9px;margin:12px 0 0;color:var(--fg);font-size:14px;cursor:pointer}
+  .check input{width:17px;height:17px;accent-color:var(--accent);margin:0}
+  .hint{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+  details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--fg)}
+
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .drops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  @media(max-width:560px){.drops{grid-template-columns:minmax(0,1fr)}}
+  .drop{display:flex;flex-direction:column;gap:3px;margin:0;padding:16px;border:1.5px dashed var(--line);border-radius:12px;background:var(--surface-2);cursor:pointer;color:var(--fg);min-width:0}
+  .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+  .drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+  .drop-t{font:600 15px/1.3 var(--font-head)}
+  .drop-s{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+
+  button{font:inherit;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:11px;padding:11px 16px;font-weight:600;background:var(--accent);color:var(--accent-fg)}
+  a.btn{text-decoration:none}
+  .btn:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+  .btn.block{width:100%;padding:14px 16px;font-size:16px}
+  .btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:500;padding:8px 12px;font-size:13.5px}
+  .btn.ghost:hover{border-color:var(--accent);filter:none}
+  .row-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{width:42px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);font-size:19px;line-height:1;padding:0}
+  .chip:hover{border-color:var(--accent)}
+
+  .phone{border:1px solid var(--line);border-radius:18px;padding:10px;background:var(--surface)}
+  #canvas{display:block;width:100%;max-width:340px;max-height:62vh;aspect-ratio:9/16;margin:0 auto;border-radius:10px;background:#fff;object-fit:contain}
+  .cap{margin:10px 0 0;text-align:center;font-size:12.5px;color:var(--muted)}
+
+  progress{width:100%;height:8px;margin-top:14px;accent-color:var(--accent)}
+  #status{margin:10px 0 0;font-size:13.5px;color:var(--muted);min-height:20px}
+  #status.err{color:var(--danger)}
+  .results{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+  .result{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)}
+  .result video{width:96px;aspect-ratio:9/16;object-fit:cover;border-radius:8px;background:#000}
+  .r-name{font-weight:600;overflow-wrap:anywhere;font-size:14px}
+  .r-meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .r-msg{font-size:12.5px;margin-top:8px;color:var(--muted)}
+  .r-msg.ok{color:var(--ok)} .r-msg.err{color:var(--danger)}
+  .r-cap{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:13px;line-height:1.5;overflow-wrap:anywhere;user-select:text}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1>Reel Framer</h1>
+      <p>Your hook on top, the clip in the middle, your logo below. Everything is made in your browser and nothing is uploaded.</p>
+    </div>
+  </header>
+
+  <div class="app">
+    <div class="steps">
+
+      <section class="card" aria-labelledby="s1">
+        <h2 id="s1"><span class="n">1</span>Add your clips</h2>
+        <div class="drops">
+          <label class="drop" id="dropVideos" for="videos"><span class="drop-t">Videos</span><span class="drop-s" id="videosInfo">Shorts or Reels. Choose several for a batch.</span></label>
+          <label class="drop" id="dropLogo" for="logo"><span class="drop-t">Logo or ad</span><span class="drop-s" id="logoInfo">A picture or a video. A video loops until the clip ends.</span></label>
+        </div>
+        <input class="sr" type="file" id="videos" accept="video/*" multiple>
+        <input class="sr" type="file" id="logo" accept="image/*,video/*">
+        <label for="clipType">Clip type</label>
+        <select id="clipType">
+          <option value="auto">Auto (find an existing white frame)</option>
+          <option value="framed">Already framed: replace its caption and logo</option>
+          <option value="raw">Plain clip, no frame</option>
+        </select>
+        <p class="hint" id="frameInfo">Clips that already have a caption on a white background (and maybe a logo) are cut down to the picture, so your hook and your logo replace the old ones.</p>
+        <div class="row-btns"><button class="btn ghost" id="clearLogo" type="button">Remove saved logo</button></div>
+      </section>
+
+      <section class="card" aria-labelledby="s2">
+        <h2 id="s2"><span class="n">2</span>Hook and post caption</h2>
+        <div class="grid2">
+          <div><label for="niche">Niche</label><select id="niche"></select></div>
+          <div><label for="topic">Short topic (optional)</label><input type="text" id="topic" maxlength="60" placeholder="e.g. GTA 6 or Rodri to Barcelona" autocomplete="off"></div>
+        </div>
+        <div class="row-btns">
+          <button class="btn" id="writeHooks" type="button">Write hooks for my clips</button>
+          <button class="btn ghost" id="hookStop" type="button" hidden>Stop</button>
+          <button class="btn ghost" id="hookUndo" type="button" hidden>Undo</button>
+        </div>
+        <p class="hint" id="hookMsg" role="status" aria-live="polite">Inside Claude, the hooks are written by looking at one frame of each clip. Elsewhere they come from built-in templates for your niche. You can edit every line.</p>
+        <p class="sub" style="margin-top:18px">Hooks, one per line</p>
+        <textarea id="hooks" placeholder="One hook per line, in the same order as your clips.&#10;Type of commentary we will hear for the next 4 years&#10;Just clear the ball bro, you ain't Manuel Neuer"></textarea>
+        <div class="chips" id="emojiBar" role="group" aria-label="Insert an emoji"></div>
+        <p class="hint">Tap an emoji to add it at your cursor. If you have more clips than lines, the last line is reused.</p>
+        <label class="check"><input type="checkbox" id="autoEmoji"> Add an emoji to hooks that have none</label>
+        <label for="autoWhich">Which emoji</label>
+        <select id="autoWhich"></select>
+        <p class="sub" style="margin-top:22px">Post caption and hashtags</p>
+        <div class="row-btns" style="margin-top:0">
+          <button class="btn" id="writeCaps" type="button">Write captions and hashtags</button>
+          <button class="btn ghost" id="capStop" type="button" hidden>Stop</button>
+          <button class="btn ghost" id="capUndo" type="button" hidden>Undo</button>
+        </div>
+        <p class="hint" id="capMsg" role="status" aria-live="polite">This is the text you paste under the post, with hashtags. It is not drawn on the video. Each finished video gets a Copy caption button.</p>
+        <textarea id="captions" placeholder="One caption per line, in the same order as your clips, hashtags included.&#10;So this is where the boat ended up #gta6 #gaming #rockstargames"></textarea>
+      </section>
+
+      <section class="card" aria-labelledby="s3">
+        <h2 id="s3"><span class="n">3</span>Caption and video box</h2>
+        <p class="sub">Caption</p>
+        <div class="grid2">
+          <div><label for="font">Font</label>
+            <select id="font"><option value="Inter">Inter</option><option value="Outfit">Outfit</option><option value="Poppins">Poppins</option></select></div>
+          <div><label for="weight">Weight</label>
+            <select id="weight"><option value="300">Light</option><option value="400">Regular</option><option value="500">Medium</option><option value="600">Semibold</option><option value="700">Bold</option><option value="800">Extra bold</option></select></div>
+          <div><label for="align">Alignment</label>
+            <select id="align"><option value="left">Left</option><option value="center">Center</option></select></div>
+          <div><label for="fontSize">Size</label><input type="number" id="fontSize" min="28" max="110"></div>
+        </div>
+        <p class="sub">Video box</p>
+        <label class="check"><input type="checkbox" id="autoCrop"> Remove black or white bars baked into the clip</label>
+        <label class="check"><input type="checkbox" id="autoH"> Match the box height to each clip's shape</label>
+        <label for="mode">Fit</label>
+        <select id="mode">
+          <option value="fill">Fill the box (crops the edges if needed)</option>
+          <option value="fit">Show the whole clip (no cropping)</option>
+        </select>
+        <label for="zoom">Video size <b id="zoomVal">100%</b></label>
+        <input type="range" id="zoom" min="30" max="250">
+        <label for="fx">Move left / right <b id="fxVal">50</b></label>
+        <input type="range" id="fx" min="0" max="100">
+        <label for="fy">Move up / down <b id="fyVal">40</b></label>
+        <input type="range" id="fy" min="0" max="100">
+        <p class="hint">The position sliders only matter when the clip is larger than its box. A smaller clip is centered on white.</p>
+        <details>
+          <summary>More layout options</summary>
+          <div class="grid2">
+            <div><label for="maxH">Max box height</label><input type="number" id="maxH" min="400" max="1300"></div>
+            <div><label for="inset">Side inset</label><input type="number" id="inset" min="0" max="200"></div>
+            <div><label for="cy">Box center (from top)</label><input type="number" id="cy" min="600" max="1500"></div>
+            <div><label for="margin">Caption side margin</label><input type="number" id="margin" min="0" max="250"></div>
+          </div>
+        </details>
+        <div class="row-btns"><button class="btn ghost" id="resetAll" type="button">Reset to reference style</button></div>
+      </section>
+
+      <section class="card" aria-labelledby="s4">
+        <h2 id="s4"><span class="n">4</span>Logo</h2>
+        <div class="grid2">
+          <div><label for="logoW">Width</label><input type="number" id="logoW" min="60" max="1000"></div>
+          <div><label for="gap">Gap below the video</label><input type="number" id="gap" min="0" max="400"></div>
+        </div>
+        <label for="logoBg">Make the logo background transparent</label>
+        <select id="logoBg">
+          <option value="auto">Auto (detect the background)</option>
+          <option value="white">Remove white</option>
+          <option value="black">Remove black</option>
+          <option value="off">Off (use the logo as it is)</option>
+        </select>
+        <label for="logoTol">Edge strength <b id="logoTolVal">40</b></label>
+        <input type="range" id="logoTol" min="0" max="100">
+        <p class="hint">Raise the strength if a faint box or halo is left. Lower it if parts of the logo start to disappear. The page behind it is always white.</p>
+      </section>
+
+      <section class="card" aria-labelledby="s5">
+        <h2 id="s5"><span class="n">5</span>Quality and export</h2>
+        <div class="grid2">
+          <div><label for="res">Resolution</label>
+            <select id="res"><option value="1080">Full HD · 1080 × 1920</option><option value="1440">2K · 1440 × 2560</option><option value="2160">4K · 2160 × 3840</option></select></div>
+          <div><label for="enhance">Sharpen detail</label>
+            <select id="enhance"><option value="off">Off</option><option value="light">Light</option><option value="strong">Strong</option></select></div>
+        </div>
+        <p class="hint" id="qHint" style="margin-bottom:16px">4K gives crisp text and logo and a higher bitrate. It cannot add detail that the original clip does not have, so a 720p clip stays a little soft; Sharpen adds some crispness. 4K needs a fast computer. If your device cannot keep up, Sharpen switches itself off during the render; if motion still looks choppy, pick 2K or Full HD.</p>
+        <button class="btn block" id="go" type="button" disabled>Render videos</button>
+        <p class="hint" id="outInfo"></p>
+        <progress id="bar" value="0" max="1" hidden></progress>
+        <p id="status" role="status" aria-live="polite"></p>
+        <div class="results" id="results"></div>
+      </section>
+
+      <section class="card" aria-labelledby="s6">
+        <h2 id="s6"><span class="n">6</span>Links and posting</h2>
+        <label for="links">Links for the description (one per line)</label>
+        <textarea id="links" placeholder="Follow for more: https://instagram.com/yourname&#10;Full video: https://youtube.com/@yourname"></textarea>
+        <label class="check"><input type="checkbox" id="addShorts"> Add #Shorts to the YouTube description</label>
+        <p class="hint">YouTube makes links in the description clickable. Instagram does not make links in captions clickable, so the Instagram caption has no links; put yours in your bio.</p>
+        <p class="sub">Upload pages</p>
+        <div class="row-btns" style="margin-top:0">
+          <a class="btn ghost" href="https://www.youtube.com/upload" target="_blank" rel="noopener">Open YouTube upload</a>
+          <a class="btn ghost" href="https://www.instagram.com/" target="_blank" rel="noopener">Open Instagram</a>
+        </div>
+        <p class="hint">This page cannot sign in to your accounts, so you post the video yourself. Press Save video on a result, then use its copy buttons for the Instagram caption, the YouTube title and the YouTube description, and paste them on the upload page.</p>
+      </section>
+
+    </div>
+
+    <aside class="stage" aria-label="Preview">
+      <div class="phone"><canvas id="canvas" aria-label="Live preview of the first clip"></canvas></div>
+      <p class="cap">Live preview, first clip, first frame</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+const W = 1080, H = 1920, BG = '#FFFFFF', FG = '#000000';
+const $ = id => document.getElementById(id);
+const canvas = $('canvas'), ctx = canvas.getContext('2d');
+canvas.width = W; canvas.height = H;
+let Q = 1;                                   // 1 for the preview; 1.33 / 2 while rendering 2K / 4K
+function setQuality(q) {
+  if (Q === q) return;
+  Q = q; canvas.width = Math.round(W * q); canvas.height = Math.round(H * q);
+}
+
+/* emojis common on hook / meme / football / gaming Reels */
+const EMOJIS = ['😭', '🤡', '😭🤡', '💀', '🥀', '🐐', '🤯', '👀', '😳', '🫠', '🗿', '🔥', '👇', '🫡'];
+const ROTATE = ['😭', '😭🤡', '💀', '🤯', '👀', '🫠', '🥀'];
+const coarse = (() => { try { return matchMedia('(pointer:coarse)').matches; } catch (e) { return false; } })();
+
+/* defaults = the look of the reference clips */
+const DEFAULTS = {
+  autoEmoji: true, autoWhich: 'rotate', font: 'Inter', weight: '500', align: 'left', fontSize: 48, margin: 64,
+  autoCrop: true, autoH: true, maxH: 900, inset: 50, cy: 1040,
+  mode: 'fill', zoom: 100, fx: 50, fy: 40, logoW: 250, gap: 80, logoBg: 'auto', logoTol: 40,
+  res: coarse ? '1080' : '2160', enhance: 'light', niche: 'football', topic: '', clipType: 'auto', links: '', addShorts: true
+};
+const SAVED = ['hooks', 'captions', ...Object.keys(DEFAULTS)];
+const RES_LABEL = { 1080: 'Full HD', 1440: '2K', 2160: '4K' };
+
+let logoEl = null, logoIsVideo = false, logoName = '';
+let files = [];
+let previewVideo = null, pvFile = null, pvPromise = null;
+let busy = false;
+let previewRaf = 0, previewSeq = 0;
+
+/* ---------- emoji UI ---------- */
+EMOJIS.forEach(e => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'chip'; b.textContent = e; b.setAttribute('aria-label', 'Insert ' + e);
+  b.addEventListener('click', () => insertEmoji(e));
+  $('emojiBar').appendChild(b);
+});
+$('autoWhich').innerHTML = '<option value="rotate">Rotate (' + ROTATE.join(' ') + ')</option>' +
+  EMOJIS.map(e => `<option value="${e}">${e}</option>`).join('');
+
+function insertEmoji(e) {
+  const t = $('hooks');
+  const s = t.selectionStart ?? t.value.length, en = t.selectionEnd ?? s;
+  t.value = t.value.slice(0, s) + e + t.value.slice(en);
+  const p = s + e.length;
+  t.setSelectionRange(p, p); t.focus();
+  t.dispatchEvent(new Event('input'));
+}
+
+/* ---------- settings ---------- */
+const cfg = () => ({
+  cy: +$('cy').value, maxH: +$('maxH').value, inset: +$('inset').value,
+  autoH: $('autoH').checked, autoCrop: $('autoCrop').checked,
+  font: $('font').value, weight: $('weight').value, align: $('align').value,
+  fontSize: +$('fontSize').value, margin: +$('margin').value,
+  logoW: +$('logoW').value, gap: +$('gap').value, logoBg: $('logoBg').value, logoTol: +$('logoTol').value,
+  mode: $('mode').value, zoom: +$('zoom').value / 100,
+  fx: +$('fx').value / 100, fy: +$('fy').value / 100,
+  enhance: $('enhance').value, res: +$('res').value
+});
+const getVal = el => el.type === 'checkbox' ? el.checked : el.value;
+const setVal = (el, v) => { if (el.type === 'checkbox') el.checked = !!v; else el.value = v; };
+function saveCfg() {
+  try { localStorage.setItem('reelframer_cfg_v3', JSON.stringify(Object.fromEntries(SAVED.map(id => [id, getVal($(id))])))); } catch (e) {}
+}
+function loadCfg() {
+  Object.entries(DEFAULTS).forEach(([id, v]) => setVal($(id), v));
+  try {
+    const s = JSON.parse(localStorage.getItem('reelframer_cfg_v3') || 'null');
+    if (s) SAVED.forEach(id => { if (id in s) setVal($(id), s[id]); });
+  } catch (e) {}
+}
+function syncLabels() {
+  $('zoomVal').textContent = $('zoom').value + '%';
+  $('fxVal').textContent = $('fx').value;
+  $('fyVal').textContent = $('fy').value;
+  $('logoTolVal').textContent = $('logoTol').value;
+  const r = +$('res').value;
+  $('outInfo').textContent = `Output: ${RES_LABEL[r]}, ${r} × ${Math.round(r * 16 / 9)} pixels, MP4 where your browser supports it.`;
+}
+
+/* ---------- fonts ---------- */
+const fontStack = c => `"${c.font}", Inter, "Helvetica Neue", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+const fontStr = (c, size) => `${c.weight} ${size}px ${fontStack(c)}`;
+async function loadFont(c) {
+  try { await document.fonts.load(`${c.weight} 48px "${c.font}"`); } catch (e) {}
+}
+
+/* ---------- hooks ---------- */
+const hookLines = () => $('hooks').value.split('\n').map(s => s.trim()).filter(Boolean);
+const hasEmoji = s => /\p{Extended_Pictographic}/u.test(s);
+function hookFor(i) {
+  const l = hookLines();
+  if (!l.length) return '';
+  let t = l[Math.min(i, l.length - 1)];
+  if ($('autoEmoji').checked && !hasEmoji(t)) {
+    const sel = $('autoWhich').value;
+    t += ' ' + (sel === 'rotate' ? ROTATE[i % ROTATE.length] : sel);
+  }
+  return t;
+}
+
+/* ---------- text layout ---------- */
+function wrap(text, maxW) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = []; let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width <= maxW || !cur) cur = t;
+    else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+function layoutText(text, c) {
+  const maxW = W - c.margin * 2;
+  let size = c.fontSize, lines;
+  for (;;) {
+    ctx.font = fontStr(c, size);
+    lines = wrap(text, maxW);
+    if (lines.length <= 3 || size <= 30) break;
+    size -= 2;
+  }
+  if (lines.length > 3) {
+    lines = lines.slice(0, 3);
+    lines[2] = lines[2].replace(/\s+\S*$/, '') + '...';
+  }
+  return { lines, size };
+}
+
+/* ---------- finding the picture: black / white bars, and an existing white frame with a caption ---------- */
+async function detectBars(v, reg) {
+  const vw = v.videoWidth, vh = v.videoHeight, dur = v.duration || 1;
+  if (!vw || !vh) return null;
+  const Rg = reg || { x: 0, y: 0, w: vw, h: vh };
+  const sc = Math.min(1, 480 / Math.max(Rg.w, Rg.h));
+  const cw = Math.max(8, Math.round(Rg.w * sc)), ch = Math.max(8, Math.round(Rg.h * sc));
+  const oc = document.createElement('canvas'); oc.width = cw; oc.height = ch;
+  const o = oc.getContext('2d', { willReadFrequently: true });
+  let L = cw, T = ch, R = -1, B = -1, used = 0;
+  const t0 = v.currentTime;
+  for (const f of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+    v.currentTime = Math.min(Math.max(dur - 0.05, 0), dur * f);
+    await new Promise(res => { v.onseeked = res; setTimeout(res, 1200); });
+    o.drawImage(v, Rg.x, Rg.y, Rg.w, Rg.h, 0, 0, cw, ch);
+    const d = o.getImageData(0, 0, cw, ch).data;
+    const kind = i => {                       // 1 = black, 2 = white, 0 = picture
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      if (r < 30 && g < 30 && b < 30) return 1;
+      if (r > 226 && g > 226 && b > 226) return 2;
+      return 0;
+    };
+    const rowBar = y => {
+      let k1 = 0, k2 = 0;
+      for (let x = 0; x < cw; x++) { const k = kind((y * cw + x) * 4); if (k === 1) k1++; else if (k === 2) k2++; }
+      return k1 >= cw * 0.97 || k2 >= cw * 0.97;
+    };
+    let t = 0; while (t < ch && rowBar(t)) t++;
+    if (t >= ch) continue;                    // blank frame (fade): ignore
+    let b = ch - 1; while (b > t && rowBar(b)) b--;
+    const colBar = x => {
+      let k1 = 0, k2 = 0, n = b - t + 1;
+      for (let y = t; y <= b; y++) { const k = kind((y * cw + x) * 4); if (k === 1) k1++; else if (k === 2) k2++; }
+      return k1 >= n * 0.97 || k2 >= n * 0.97;
+    };
+    let l = 0; while (l < cw && colBar(l)) l++;
+    let r = cw - 1; while (r > l && colBar(r)) r--;
+    L = Math.min(L, l); T = Math.min(T, t); R = Math.max(R, r); B = Math.max(B, b); used++;
+  }
+  v.currentTime = t0;
+  if (!used) return null;
+  if (L === 0 && T === 0 && R === cw - 1 && B === ch - 1) return null;   // no bars
+  const x0 = L > 0 ? Math.ceil(L / sc) + 2 : 0;
+  const y0 = T > 0 ? Math.ceil(T / sc) + 2 : 0;
+  const x1 = R < cw - 1 ? Math.floor((R + 1) / sc) - 2 : Rg.w;
+  const y1 = B < ch - 1 ? Math.floor((B + 1) / sc) - 2 : Rg.h;
+  const w = x1 - x0, h = y1 - y0;
+  if (w < Rg.w * 0.3 || h < Rg.h * 0.3) return null;
+  return { x: Rg.x + x0, y: Rg.y + y0, w, h };
+}
+
+/* A clip that is already framed is mostly plain white with the picture as one big block. A caption is
+   thin text and a logo is small, so only a block that is mostly "ink" across its rows and columns counts. */
+async function detectFramed(v, auto) {
+  const vw = v.videoWidth, vh = v.videoHeight, dur = v.duration || 1;
+  if (!vw || !vh) return null;
+  const sc = Math.min(1, 540 / Math.max(vw, vh));
+  const cw = Math.max(16, Math.round(vw * sc)), ch = Math.max(16, Math.round(vh * sc));
+  const oc = document.createElement('canvas'); oc.width = cw; oc.height = ch;
+  const o = oc.getContext('2d', { willReadFrequently: true });
+  const ink = new Uint8Array(cw * ch);        // 1 where any sampled frame is not white
+  const t0 = v.currentTime; let used = 0;
+  for (const f of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+    v.currentTime = Math.min(Math.max(dur - 0.05, 0), dur * f);
+    await new Promise(res => { v.onseeked = res; setTimeout(res, 1200); });
+    o.drawImage(v, 0, 0, cw, ch);
+    const d = o.getImageData(0, 0, cw, ch).data;
+    for (let i = 0, q = 0; i < d.length; i += 4, q++) if (Math.min(d[i], d[i + 1], d[i + 2]) < 238) ink[q] = 1;
+    used++;
+  }
+  v.currentTime = t0;
+  if (!used) return null;
+  const rowFrac = new Float32Array(ch);
+  for (let y = 0; y < ch; y++) { let c = 0; for (let x = 0; x < cw; x++) c += ink[y * cw + x]; rowFrac[y] = c / cw; }
+  const gap = Math.max(2, Math.round(ch * 0.012));
+  let best = null, start = -1, last = -1;
+  const close = () => { if (start >= 0 && (!best || last - start > best.b - best.t)) best = { t: start, b: last }; };
+  for (let y = 0; y < ch; y++) {
+    if (rowFrac[y] >= 0.45) { if (start < 0) start = y; last = y; }
+    else if (start >= 0 && y - last > gap) { close(); start = -1; }
+  }
+  close();
+  if (!best) return null;
+  const n = best.b - best.t + 1;
+  const colOk = x => { let c = 0; for (let y = best.t; y <= best.b; y++) c += ink[y * cw + x]; return c / n >= 0.45; };
+  let l = 0; while (l < cw && !colOk(l)) l++;
+  let r = cw - 1; while (r > l && !colOk(r)) r--;
+  if (r <= l) return null;
+  const area = (r - l + 1) * n;
+  if (area < cw * ch * 0.2) return null;                   // too small to be the picture
+  if (1 - area / (cw * ch) < 0.04) return null;            // fills the frame: nothing to cut away
+  let outside = 0, inkOut = 0;
+  for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+    if (y >= best.t && y <= best.b && x >= l && x <= r) continue;
+    outside++; inkOut += ink[y * cw + x];
+  }
+  if (1 - inkOut / Math.max(1, outside) < (auto ? 0.85 : 0.5)) return null;   // the rest is not plain white
+  const pad = 3;
+  const x = Math.round(l / sc) + pad, y = Math.round(best.t / sc) + pad;
+  const w = Math.round((r + 1 - l) / sc) - pad * 2, h = Math.round(n / sc) - pad * 2;
+  return (w > 40 && h > 40) ? { x, y, w, h } : null;
+}
+
+async function detectCrop(v) {
+  v._frame = null; v._bars = null;
+  const mode = $('clipType').value;
+  try { if (mode !== 'raw') v._frame = await detectFramed(v, mode === 'auto'); } catch (e) { v._frame = null; }
+  try { v._bars = await detectBars(v, v._frame); } catch (e) { v._bars = null; }
+}
+function effRect(v, c) {
+  return (c.autoCrop && v._bars) || v._frame || { x: 0, y: 0, w: v.videoWidth, h: v.videoHeight };
+}
+function updateFrameInfo() {
+  const el = $('frameInfo');
+  if (!files.length || !previewVideo) return;
+  if (previewVideo._frame) {
+    el.textContent = 'Found a white frame around the picture in the first clip. The old caption and logo are cut away and replaced with yours.' + (logoEl ? '' : ' Add your logo above to put it below the video.');
+  } else {
+    el.textContent = $('clipType').value === 'framed'
+      ? 'No white frame found in the first clip, so the whole clip is used.'
+      : 'The first clip is a plain clip, so nothing is cut away.';
+  }
+}
+
+/* ---------- layout ---------- */
+function layoutFor(v, c) {
+  const boxW = W - 2 * c.inset;
+  let boxH = c.maxH, r = null;
+  if (v && v.videoWidth) {
+    r = effRect(v, c);
+    if (c.autoH) boxH = Math.max(400, Math.min(c.maxH, Math.round(boxW * r.h / r.w)));
+  } else if (c.autoH) boxH = Math.min(c.maxH, Math.round(boxW / 1.15));
+  const boxX = c.inset;
+  const boxY = Math.max(260, Math.min(H - boxH - 150, Math.round(c.cy - boxH / 2)));
+  return { boxX, boxY, boxW, boxH, r };
+}
+
+/* ---------- sharpen (cheap unsharp mask: blurred inverted copy at 50% = high-pass, overlaid on the video) ---------- */
+const enhCv = document.createElement('canvas'), enhCx = enhCv.getContext('2d');
+let enhanceDisabled = false, sharpenDropped = false;
+const SHARP = { light: { r: 1.0, a: 0.55 }, strong: { r: 1.2, a: 0.95 } };
+function sharpenBox(c, L) {
+  const s = SHARP[c.enhance];
+  if (!s || enhanceDisabled) return;
+  const sx = Math.max(0, Math.round(L.boxX * Q)), sy = Math.max(0, Math.round(L.boxY * Q));
+  const sw = Math.min(canvas.width - sx, Math.round(L.boxW * Q)), sh = Math.min(canvas.height - sy, Math.round(L.boxH * Q));
+  if (sw < 8 || sh < 8) return;
+  if (enhCv.width !== sw || enhCv.height !== sh) { enhCv.width = sw; enhCv.height = sh; }
+  const t = enhCx;
+  t.globalCompositeOperation = 'source-over'; t.globalAlpha = 1; t.filter = 'none';
+  t.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+  t.globalAlpha = 0.5; t.filter = `blur(${(s.r * Q).toFixed(2)}px) invert(1)`;
+  t.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+  t.globalAlpha = 1; t.filter = 'none';
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = s.a;
+  ctx.drawImage(enhCv, sx, sy);
+  ctx.restore();
+}
+
+/* ---------- drawing ---------- */
+function drawVideo(v, c, L) {
+  ctx.save();
+  ctx.beginPath(); ctx.rect(L.boxX, L.boxY, L.boxW, L.boxH); ctx.clip();
+  if (L.r) {
+    const r = L.r;
+    const cover = Math.max(L.boxW / r.w, L.boxH / r.h), contain = Math.min(L.boxW / r.w, L.boxH / r.h);
+    const s = (c.mode === 'fit' ? contain : cover) * c.zoom;
+    const dw = r.w * s, dh = r.h * s;
+    const x = dw <= L.boxW ? (L.boxW - dw) / 2 : -(dw - L.boxW) * c.fx;
+    const y = dh <= L.boxH ? (L.boxH - dh) / 2 : -(dh - L.boxH) * c.fy;
+    ctx.drawImage(v, r.x, r.y, r.w, r.h, L.boxX + x, L.boxY + y, dw, dh);
+    sharpenBox(c, L);
+  } else {
+    ctx.fillStyle = '#e6e8ee'; ctx.fillRect(L.boxX, L.boxY, L.boxW, L.boxH);
+    ctx.fillStyle = '#9aa1b2'; ctx.font = `600 40px ${fontStack(c)}`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('your video', W / 2, L.boxY + L.boxH / 2);
+  }
+  ctx.restore();
+}
+
+/* ---------- logo background removal ---------- */
+let logoAuto = null, logoVersion = 0, keyLast = '';
+const keyCv = document.createElement('canvas');
+const keyCx = keyCv.getContext('2d', { willReadFrequently: true });
+
+const logoSize = () => ({
+  iw: logoIsVideo ? logoEl.videoWidth : logoEl.naturalWidth,
+  ih: logoIsVideo ? logoEl.videoHeight : logoEl.naturalHeight
+});
+
+/* looks at the four corners: already transparent, a plain colour, or no clear background */
+function detectLogoBg() {
+  logoAuto = null;
+  if (!logoEl) return;
+  const { iw, ih } = logoSize();
+  if (!iw || !ih) return;
+  const w = 64, h = Math.max(8, Math.round(64 * ih / iw));
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const x = cv.getContext('2d', { willReadFrequently: true });
+  x.drawImage(logoEl, 0, 0, w, h);
+  const cs = [[0, 0], [w - 2, 0], [0, h - 2], [w - 2, h - 2]].map(([a, b]) => {
+    const d = x.getImageData(a, b, 2, 2).data; let r = 0, g = 0, bl = 0, al = 0;
+    for (let i = 0; i < 16; i += 4) { r += d[i]; g += d[i + 1]; bl += d[i + 2]; al += d[i + 3]; }
+    return [r / 4, g / 4, bl / 4, al / 4];
+  });
+  const mean = i => cs.reduce((t, c) => t + c[i], 0) / 4;
+  if (mean(3) < 40) { logoAuto = { transparent: true }; return; }
+  const spread = Math.max(...[0, 1, 2].map(i => Math.max(...cs.map(c => c[i])) - Math.min(...cs.map(c => c[i]))));
+  if (spread < 40) logoAuto = { r: mean(0), g: mean(1), b: mean(2) };
+}
+
+function logoBgFor(c) {
+  if (c.logoBg === 'off') return null;
+  if (c.logoBg === 'white') return { r: 255, g: 255, b: 255 };
+  if (c.logoBg === 'black') return { r: 0, g: 0, b: 0 };
+  return (logoAuto && !logoAuto.transparent) ? logoAuto : null;
+}
+
+/* pixels close to the background colour become transparent, with soft edges and the background colour un-mixed */
+function keyLogo(w, h, bg, tol) {
+  if (keyCv.width !== w || keyCv.height !== h) { keyCv.width = w; keyCv.height = h; }
+  keyCx.clearRect(0, 0, w, h);
+  keyCx.drawImage(logoEl, 0, 0, w, h);
+  const id = keyCx.getImageData(0, 0, w, h), d = id.data;
+  const lo = tol * 0.6, hi = lo + 45;
+  for (let i = 0; i < d.length; i += 4) {
+    const dr = d[i] - bg.r, dg = d[i + 1] - bg.g, db = d[i + 2] - bg.b;
+    const dist = Math.sqrt((dr * dr + dg * dg + db * db) / 3);
+    const a = dist <= lo ? 0 : dist >= hi ? 1 : (dist - lo) / (hi - lo);
+    if (a <= 0) { d[i + 3] = 0; continue; }
+    if (a < 1) {
+      d[i]     = Math.max(0, Math.min(255, (d[i]     - bg.r * (1 - a)) / a));
+      d[i + 1] = Math.max(0, Math.min(255, (d[i + 1] - bg.g * (1 - a)) / a));
+      d[i + 2] = Math.max(0, Math.min(255, (d[i + 2] - bg.b * (1 - a)) / a));
+      d[i + 3] = d[i + 3] * a;
+    }
+  }
+  keyCx.putImageData(id, 0, 0);
+}
+
+function drawLogo(c, L) {
+  if (!logoEl) return;
+  const { iw, ih } = logoSize();
+  if (!iw || !ih || (logoIsVideo && logoEl.readyState < 2)) return;
+  const top = L.boxY + L.boxH + c.gap;
+  const maxH = H - top - 30;
+  let lw = c.logoW, lh = ih * lw / iw;
+  if (lh > maxH && maxH > 20) { lh = maxH; lw = iw * lh / ih; }
+  const x = (W - lw) / 2;
+  const bg = logoBgFor(c);
+  if (!bg) { ctx.drawImage(logoEl, x, top, lw, lh); return; }
+  const pw = Math.max(1, Math.round(lw * Q)), ph = Math.max(1, Math.round(lh * Q));   // keyed at output resolution, so 4K stays sharp
+  const key = `${pw}x${ph}|${bg.r | 0},${bg.g | 0},${bg.b | 0}|${c.logoTol}|${logoVersion}`;
+  if (logoIsVideo || key !== keyLast) { keyLogo(pw, ph, bg, c.logoTol); keyLast = key; }
+  ctx.drawImage(keyCv, x, top, lw, lh);
+}
+
+function drawFrame(v, hook) {
+  const c = cfg(), L = layoutFor(v, c);
+  ctx.setTransform(Q, 0, 0, Q, 0, 0);          // all layout maths stays in 1080 x 1920 units
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);   // always white
+  drawVideo(v, c, L);
+
+  if (hook) {
+    const { lines, size } = layoutText(hook, c);
+    const lh = size * 1.45;
+    const top = L.boxY - 30 - lines.length * lh;
+    ctx.fillStyle = FG; ctx.textBaseline = 'top';
+    ctx.font = fontStr(c, size);
+    ctx.textAlign = c.align === 'center' ? 'center' : 'left';
+    const x = c.align === 'center' ? W / 2 : c.margin;
+    lines.forEach((ln, i) => ctx.fillText(ln, x, top + i * lh + (lh - size) / 2));
+  }
+  drawLogo(c, L);
+}
+
+/* ---------- preview ---------- */
+function ensurePreviewVideo() {
+  if (!files.length) { previewVideo = null; pvFile = null; pvPromise = null; return Promise.resolve(); }
+  if (pvFile === files[0] && pvPromise) return pvPromise;
+  pvFile = files[0];
+  pvPromise = (async () => {
+    const v = document.createElement('video');
+    v._file = files[0]; v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.src = URL.createObjectURL(files[0]);
+    await new Promise(r => { v.onloadeddata = r; v.onerror = r; });
+    await detectCrop(v);
+    v.currentTime = Math.min(0.5, (v.duration || 1) / 2);
+    await new Promise(r => { v.onseeked = r; setTimeout(r, 1500); });
+    previewVideo = v;
+  })();
+  return pvPromise;
+}
+async function startPreview() {
+  cancelAnimationFrame(previewRaf);
+  const seq = ++previewSeq;
+  if (busy) return;
+  await loadFont(cfg()); await document.fonts.ready;
+  await ensurePreviewVideo();
+  if (busy || seq !== previewSeq) return;
+  updateFrameInfo();
+  drawFrame(previewVideo, hookFor(0));
+  if (logoIsVideo) {                       // keep the logo video moving in the preview
+    let last = 0;
+    const tick = t => {
+      if (busy || seq !== previewSeq) return;
+      if (t - last > 40) { drawFrame(previewVideo, hookFor(0)); last = t; }
+      previewRaf = requestAnimationFrame(tick);
+    };
+    previewRaf = requestAnimationFrame(tick);
+  }
+}
+
+/* ---------- logo storage (IndexedDB) ---------- */
+const idb = {
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('reelframer', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  },
+  async get(k) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const q = db.transaction('kv').objectStore('kv').get(k);
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+  },
+  async set(k, v) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k);
+      t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+    });
+  },
+  async del(k) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').delete(k);
+      t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+    });
+  }
+};
+
+const LOGO_HINT = 'A picture or a video. A video loops until the clip ends.';
+async function useLogo(file) {
+  const url = URL.createObjectURL(file);
+  if (file.type.startsWith('video/')) {
+    const v = document.createElement('video');
+    v.src = url; v.loop = true; v.muted = true; v.playsInline = true; v.preload = 'auto';
+    await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = () => rej(new Error('Cannot read the logo video')); });
+    try { await v.play(); } catch (e) {}
+    logoEl = v; logoIsVideo = true;
+  } else {
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('Cannot read the logo image')); img.src = url; });
+    logoEl = img; logoIsVideo = false;
+  }
+  logoVersion++; keyLast = ''; detectLogoBg();
+  logoName = file.name || 'saved logo';
+  const bgNote = !logoAuto ? 'no plain background found' : logoAuto.transparent ? 'already transparent' : 'plain background removed';
+  $('logoInfo').textContent = `${logoName} · ${logoIsVideo ? 'video, loops' : 'picture'} · ${bgNote}. Saved in this browser.`;
+  startPreview();
+}
+
+$('logo').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    await useLogo(f);
+    try { await idb.set('logo', f); } catch (err) {}
+  } catch (err) { setStatus(err.message, true); }
+});
+$('clearLogo').addEventListener('click', async () => {
+  try { await idb.del('logo'); } catch (e) {}
+  if (logoIsVideo && logoEl) logoEl.pause();
+  logoEl = null; logoIsVideo = false; $('logo').value = '';
+  $('logoInfo').textContent = LOGO_HINT;
+  startPreview();
+});
+
+/* ---------- inputs ---------- */
+function setVideos(list) {
+  files = list;
+  $('go').disabled = !files.length || busy;
+  $('videosInfo').textContent = files.length
+    ? `${files.length} clip${files.length > 1 ? 's' : ''}: ${files.map(f => f.name).join(', ')}`
+    : 'Shorts or Reels. Choose several for a batch.';
+  previewVideo = null; pvFile = null; pvPromise = null;
+  startPreview();
+}
+$('videos').addEventListener('change', e => setVideos([...e.target.files]));
+
+[['dropVideos', 'videos', 'video/'], ['dropLogo', 'logo', '']].forEach(([zone, input, kind]) => {
+  const z = $(zone);
+  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('over'); });
+  z.addEventListener('dragleave', () => z.classList.remove('over'));
+  z.addEventListener('drop', e => {
+    e.preventDefault(); z.classList.remove('over');
+    const dt = new DataTransfer();
+    [...e.dataTransfer.files].filter(f => kind ? f.type.startsWith(kind) : /^(image|video)\//.test(f.type)).forEach(f => dt.items.add(f));
+    if (dt.files.length) { $(input).files = dt.files; $(input).dispatchEvent(new Event('change')); }
+  });
+});
+
+SAVED.forEach(id => {
+  const h = () => {
+    if (id === 'clipType') { previewVideo = null; pvFile = null; pvPromise = null; }
+    syncLabels(); saveCfg(); startPreview();
+  };
+  $(id).addEventListener('input', h); $(id).addEventListener('change', h);
+});
+$('resetAll').addEventListener('click', () => {
+  Object.entries(DEFAULTS).forEach(([id, v]) => setVal($(id), v));
+  syncLabels(); saveCfg(); startPreview();
+});
+
+/* ---------- rendering ---------- */
+function pickMime(res) {
+  const level = res >= 2160 ? '640033' : res >= 1440 ? '640032' : '640028';
+  const list = [
+    `video/mp4;codecs=avc1.${level},mp4a.40.2`, 'video/mp4;codecs=avc1.640033,mp4a.40.2', 'video/mp4;codecs=avc1.640028,mp4a.40.2',
+    'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4',
+    'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'
+  ];
+  return list.find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+}
+const BITRATE = { 1080: 14e6, 1440: 25e6, 2160: 50e6 };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function renderOne(file, hook, res, onProgress) {
+  const url = URL.createObjectURL(file);
+  const v = document.createElement('video');
+  v.src = url; v.playsInline = true; v.preload = 'auto';
+  await new Promise((resolve, rej) => { v.onloadedmetadata = resolve; v.onerror = () => rej(new Error('Cannot read ' + file.name)); });
+  if (v.readyState < 2) await new Promise(r => { v.onloadeddata = r; });
+  await loadFont(cfg()); await document.fonts.ready;
+  await detectCrop(v);
+
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  await ac.resume();
+  const src = ac.createMediaElementSource(v);
+  const dest = ac.createMediaStreamDestination();
+  src.connect(dest); // audio goes to the recording only, not the speakers
+
+  const stream = canvas.captureStream(30);
+  dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+
+  const mime = pickMime(res);
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: BITRATE[res] || 14e6, audioBitsPerSecond: 192000 });
+  const chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  const stopped = new Promise(r => rec.onstop = r);
+
+  v.currentTime = 0;
+  await new Promise(r => { v.onseeked = r; setTimeout(r, 500); });
+  if (logoIsVideo) { logoEl.currentTime = 0; try { await logoEl.play(); } catch (e) {} } // restarts and loops until the end
+  drawFrame(v, hook);
+  rec.start(250);
+  await v.play();
+
+  let raf, frames = 0, ema = 12;
+  const t0 = performance.now();
+  const loop = () => {
+    const tf = performance.now();
+    drawFrame(v, hook); frames++;
+    ema = ema * 0.9 + (performance.now() - tf) * 0.1;        // average time to draw one frame
+    if (ema > 30 && !enhanceDisabled && cfg().enhance !== 'off') { enhanceDisabled = true; sharpenDropped = true; }
+    onProgress(v.currentTime / v.duration);
+    raf = requestAnimationFrame(loop);
+  };
+  loop();
+  await new Promise(r => v.onended = r);
+  drawFrame(v, hook);
+  await sleep(250);
+  cancelAnimationFrame(raf);
+  const fps = frames / Math.max(0.1, (performance.now() - t0) / 1000);
+  rec.stop();
+  await stopped;
+  ac.close();
+  URL.revokeObjectURL(url);
+
+  const type = (mime.split(';')[0]) || 'video/webm';
+  return { blob: new Blob(chunks, { type }), ext: type.includes('mp4') ? 'mp4' : 'webm', fps };
+}
+
+function setStatus(msg, isErr) { const s = $('status'); s.textContent = msg; s.classList.toggle('err', !!isErr); }
+
+/* ---------- saving the result ---------- */
+/* Inside a claude.ai page the browser blocks downloads that the page starts itself. The "downloads"
+   capability asks the viewer to confirm and saves for us. Outside it (a normal browser tab) we fall back
+   to a plain download link, then to the share sheet. */
+const dlReady = (async () => {
+  try { return (window.claude && window.claude.use) ? await window.claude.use('downloads') : null; } catch (e) { return null; }
+})();
+
+async function saveResult(item, msgEl) {
+  const say = (t, cls) => { msgEl.textContent = t; msgEl.className = 'r-msg ' + (cls || ''); };
+  const cap = await dlReady;
+  if (cap) {
+    try {
+      await cap.save({ filename: item.name, data: item.blob });
+      say('Saved. Look in your downloads.', 'ok'); return;
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'declined') { say('Save cancelled.'); return; }
+      if (code === 'too_large') { say('This file is too large to save from here. Pick 2K or Full HD and render again.', 'err'); return; }
+      if (code === 'rate_limited') { say('Another save prompt is open. Answer it, then try again.', 'err'); return; }
+      if (code !== 'unavailable') { say('Could not save: ' + ((e && e.message) || 'unknown error'), 'err'); return; }
+    }
+  }
+  try {
+    const a = document.createElement('a');
+    a.href = item.url; a.download = item.name; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    say('Download started. If nothing happens, press and hold the video and choose Download.', 'ok');
+  } catch (e) { say('Press and hold the video and choose Download.', 'err'); }
+}
+
+function addResult(item) {
+  const card = document.createElement('div'); card.className = 'result';
+  const vid = document.createElement('video');
+  vid.src = item.url; vid.controls = true; vid.muted = true; vid.playsInline = true; vid.preload = 'metadata';
+  const body = document.createElement('div'); body.style.minWidth = '0';
+  const nm = document.createElement('div'); nm.className = 'r-name'; nm.textContent = item.name;
+  const meta = document.createElement('div'); meta.className = 'r-meta';
+  meta.textContent = `${item.w} × ${item.h} · ${(item.blob.size / 1048576).toFixed(1)} MB · ${item.ext.toUpperCase()}`;
+  const row = document.createElement('div'); row.className = 'row-btns';
+  const save = document.createElement('button'); save.type = 'button'; save.className = 'btn'; save.textContent = 'Save video';
+  const msg = document.createElement('div'); msg.className = 'r-msg'; msg.setAttribute('role', 'status');
+  save.addEventListener('click', () => saveResult(item, msg));
+  row.appendChild(save);
+  try {
+    const f = new File([item.blob], item.name, { type: item.blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) {
+      const sh = document.createElement('button'); sh.type = 'button'; sh.className = 'btn ghost'; sh.textContent = 'Share';
+      sh.addEventListener('click', async () => {
+        try { await navigator.share({ files: [f], title: item.name }); }
+        catch (e) { if (e && e.name !== 'AbortError') { msg.textContent = 'Sharing is not available here. Use Save video.'; msg.className = 'r-msg err'; } }
+      });
+      row.appendChild(sh);
+    }
+  } catch (e) {}
+  const kit = document.createElement('div'); kit.className = 'row-btns';
+  const mk = (label, fn) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost'; b.textContent = label;
+    b.addEventListener('click', () => {
+      const t = fn();
+      if (!t) { msg.textContent = 'Nothing to copy yet. Write a hook or a caption in step 2.'; msg.className = 'r-msg err'; }
+      else copyText(t, msg);
+    });
+    kit.appendChild(b);
+  };
+  mk('Copy Instagram caption', () => igText(item.idx));
+  mk('Copy YouTube title', () => ytTitle(item.idx));
+  mk('Copy YouTube description', () => ytDesc(item.idx));
+  if (item.caption) {
+    const cap = document.createElement('div'); cap.className = 'r-cap'; cap.textContent = item.caption;
+    body.append(nm, meta, row, kit, cap, msg);
+  } else body.append(nm, meta, row, kit, msg);
+  card.append(vid, body);
+  $('results').appendChild(card);
+}
+
+$('go').addEventListener('click', async () => {
+  if (busy || !files.length) return;
+  busy = true; cancelAnimationFrame(previewRaf);
+  $('go').disabled = true; $('bar').hidden = false; $('bar').value = 0;
+  $('results').innerHTML = '';
+  const res = +$('res').value;
+  let wl = null, slow = null;
+  enhanceDisabled = false; sharpenDropped = false;
+  try { wl = await navigator.wakeLock?.request('screen'); } catch (e) {}
+  try {
+    setQuality(res / 1080);
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      setStatus(`Rendering ${i + 1} of ${files.length}: ${f.name}. Keep this tab open and visible.`);
+      const out = await renderOne(f, hookFor(i), res, p => { $('bar').value = (i + (p || 0)) / files.length; });
+      if (out.fps < 27 && res > 1080) slow = Math.round(out.fps);
+      const name = f.name.replace(/\.[^.]+$/, '') + '_final.' + out.ext;
+      addResult({ blob: out.blob, ext: out.ext, name, url: URL.createObjectURL(out.blob), w: canvas.width, h: canvas.height, caption: capFor(i), idx: i });
+    }
+    const dropNote = sharpenDropped ? ' Sharpen was switched off part-way so the motion stays smooth.' : '';
+    setStatus(slow
+      ? `Done, but this device drew only about ${slow} frames per second at ${RES_LABEL[res]}. For smoother motion, choose a lower resolution and render again.` + dropNote
+      : 'Done. Press Save video on each result.' + dropNote);
+  } catch (err) {
+    setStatus('Could not render: ' + err.message, true);
+  }
+  try { wl && wl.release(); } catch (e) {}
+  enhanceDisabled = false;
+  setQuality(1);
+  busy = false; $('go').disabled = !files.length; $('bar').hidden = true;
+  startPreview();
+});
+
+/* ---------- hook writer ---------- */
+const NICHES = {
+  football: { label: 'Football', subjects: ['this match', 'the Champions League', 'this transfer'], t: [
+    'Watching {t} and you realize...', 'Nobody talks about what happened in {t}...', 'POV: you watched {t} live',
+    'This is why {t} broke the internet', 'Football fans after {t}', 'Type of commentary we will hear for {t}',
+    'So this is how {t} ended...', 'Not {t} doing this again', '{t} had no business being this good'] },
+  gaming: { label: 'Gaming and GTA', subjects: ['GTA 6', 'this game', 'the trailer'], t: [
+    'Watching the {t} trailer and you realize...', 'Nobody noticed this detail in {t}...', 'POV: you finally get your hands on {t}',
+    'So this is where {t} ended up...', 'Rockstar really put this in {t}', '{t} is not ready for what is coming',
+    'This is why {t} took so long', 'Me waiting for {t} like...', 'Gamers when {t} drops'] },
+  memes: { label: 'Memes and funny', subjects: ['this', 'this moment', 'this guy'], t: [
+    'POV: you thought {t} was a normal day...', 'Nobody is ready for {t}...', 'Watching {t} and you realize...',
+    'Me explaining {t} to my friends', 'This is why {t} lives in my head', 'Not {t} again...',
+    'The way {t} just ended me', 'Tell me you saw {t} without telling me'] },
+  tech: { label: 'Tech', subjects: ['this phone', 'this feature', 'AI'], t: [
+    'Nobody talks about this feature in {t}...', 'This is why {t} is different', 'POV: you finally try {t}',
+    'Watching {t} and you realize...', 'Here is what {t} does that nobody mentions', '{t} just changed everything...',
+    'You have been using {t} wrong', 'Wait until you see what {t} can do'] },
+  finance: { label: 'Finance and business', subjects: ['this stock', 'this market', 'this company'], t: [
+    'Nobody tells you this about {t}...', 'This is why {t} keeps going up', 'POV: you bought {t} early',
+    'Watching {t} and you realize...', 'Everyone is watching {t} for this reason', 'What {t} is really telling us...',
+    'The part of {t} no one explains', 'Why smart money is looking at {t}'] },
+  fitness: { label: 'Fitness', subjects: ['this workout', 'this routine', 'this diet'], t: [
+    'Nobody talks about this part of {t}...', 'POV: day 30 of {t}', 'This is why {t} actually works',
+    'Watching {t} and you realize...', 'You are doing {t} wrong...', 'What {t} did to my body in 30 days',
+    'The mistake everyone makes in {t}', 'Wait for the end of {t}...'] },
+  other: { label: 'Other', subjects: ['this', 'this video', 'this moment'], t: [
+    'Watching {t} and you realize...', 'Nobody talks about {t}...', 'POV: you finally see {t}',
+    'This is why {t} matters', 'So this is how {t} ended...', 'Wait until you see {t}...', 'Not {t} doing this...'] }
+};
+$('niche').innerHTML = Object.entries(NICHES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+
+function offlineHooks(n, niche, topic) {
+  const N = NICHES[niche] || NICHES.other;
+  const subs = topic ? [topic] : N.subjects;
+  const pool = N.t.slice().sort(() => Math.random() - 0.5);
+  return Array.from({ length: n }, (_, i) => {
+    const h = pool[i % pool.length].replace(/\{t\}/g, subs[i % subs.length]);
+    return h.charAt(0).toUpperCase() + h.slice(1);
+  });
+}
+
+/* one JPEG frame from a clip, so Claude can see what the hook has to fit */
+async function grabFrame(file) {
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.preload = 'auto';
+  const url = URL.createObjectURL(file); v.src = url;
+  try {
+    await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = () => rej(new Error('read')); });
+    const d = v.duration || 2;
+    v.currentTime = Math.min(Math.max(0.6, d * 0.35), Math.max(0, d - 0.1));
+    await new Promise(r => { v.onseeked = r; setTimeout(r, 1500); });
+    const sc = Math.min(1, 720 / v.videoWidth);
+    const c = document.createElement('canvas');
+    c.width = Math.max(2, Math.round(v.videoWidth * sc)); c.height = Math.max(2, Math.round(v.videoHeight * sc));
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+  } finally { URL.revokeObjectURL(url); }
+}
+
+function buildHookPrompt(n, niche, topic, nImg, names) {
+  const label = (NICHES[niche] || NICHES.other).label;
+  const plural = n > 1;
+  return [
+    `You write the on-screen hook caption for short vertical videos (YouTube Shorts and Instagram Reels) in the "${label}" niche.`,
+    topic ? `The creator says the clips are about: ${topic}` : '',
+    `There ${plural ? 'are ' + n + ' clips' : 'is 1 clip'}. Write exactly ${n} hook${plural ? 's' : ''}, one per clip, in the order of the clips.`,
+    names.length ? `File names in order (they may describe the clip): ${names.map(x => x.slice(0, 120)).join(' | ')}` : '',
+    nImg
+      ? `The attached image${nImg > 1 ? 's are' : ' is'} one frame from ${nImg > 1 ? 'each of the first ' + nImg + ' clips, in order' : 'the first clip'}. Make each hook fit what is actually happening in its frame.` + (n > nImg ? ' For the remaining clips write general hooks for the niche.' : '')
+      : 'You cannot see the clips, so write hooks that fit the niche, the topic and the file names.',
+    '',
+    'Rules:',
+    '- 6 to 14 words each, sentence case, plain text. A trailing "..." is fine.',
+    '- A curiosity, relatable or funny angle in the style creators use on hook reels, for example "Watching the GTA 6 trailer and you realize...", "POV: ...", "Nobody talks about ...", "This is why ...", "So this is where ... ended up..", "Type of commentary we will hear for ...".',
+    '- Never misrepresent the clip. No hashtags and no emojis (the page adds those).',
+    '- Do not identify real people from their faces. Use a name only if the creator\'s topic or the file names give it, or it is written on screen.',
+    '- Every hook must be different.',
+    `Reply with only a JSON array of ${n} string${plural ? 's' : ''}.`
+  ].filter(x => x !== '').join('\n');
+}
+
+const sampleReady = (async () => {
+  try { return (window.claude && window.claude.use) ? await window.claude.use('sample') : null; } catch (e) { return null; }
+})();
+
+let hookBusy = false, hookBackup = null, hookCtl = null;
+const hookMsg = (t, cls) => { const m = $('hookMsg'); m.textContent = t; m.className = 'hint' + (cls ? ' ' + cls : ''); };
+const REASON = {
+  not_granted: 'you did not allow it', rate_limited: 'the usage limit was reached', sampling_disabled: 'Claude is switched off for this account',
+  session_expired: 'you need to sign in again', refused: 'Claude declined this input', invalid_json: 'the reply was not usable',
+  empty_completion: 'Claude returned nothing'
+};
+
+async function writeHooks() {
+  if (hookBusy) return;
+  hookBusy = true; $('writeHooks').disabled = true;
+  const n = Math.min(12, files.length || 5);
+  const niche = $('niche').value, topic = $('topic').value.trim();
+  let lines = null, note = '';
+  hookMsg('Thinking up hooks...');
+  const sample = await sampleReady;
+  if (sample) {
+    hookCtl = new AbortController(); $('hookStop').hidden = false;
+    try {
+      let imgs = [];
+      try {
+        const lim = await sample.limits();
+        if (lim && lim.images && files.length) {
+          const k = Math.min(files.length, lim.images.maxCount, 8);
+          for (let i = 0; i < k; i++) { const b = await grabFrame(files[i]); if (b) imgs.push(b); }
+        }
+      } catch (e) { imgs = []; }
+      hookMsg(imgs.length ? 'Claude is looking at a frame from each clip...' : 'Claude is writing...');
+      const opts = { cache: false, signal: hookCtl.signal };
+      if (imgs.length) opts.images = imgs;
+      const arr = await sample.json(buildHookPrompt(n, niche, topic, imgs.length, files.slice(0, n).map(f => f.name)), opts);
+      if (Array.isArray(arr)) lines = arr.map(x => String(x).replace(/^["'\s]+|["'\s]+$/g, '')).filter(Boolean).slice(0, n);
+      if (lines && lines.length) note = imgs.length ? 'Written by Claude from a frame of each clip. Edit any line you like.' : 'Written by Claude from your niche, topic and file names. Edit any line you like.';
+    } catch (e) {
+      if (e && e.code === 'cancelled') { hookMsg('Stopped.'); hookBusy = false; $('writeHooks').disabled = false; $('hookStop').hidden = true; return; }
+      note = `Claude could not be used (${REASON[e && e.code] || 'it is unavailable right now'}), so these come from built-in templates.`;
+    }
+    $('hookStop').hidden = true;
+  } else {
+    note = 'Written from built-in templates. Open this page inside Claude to get hooks written from your actual clips.';
+  }
+  if (!lines || !lines.length) lines = offlineHooks(n, niche, topic);
+  hookBackup = $('hooks').value;
+  $('hooks').value = lines.join('\n');
+  $('hooks').dispatchEvent(new Event('input'));
+  $('hookUndo').hidden = !hookBackup.trim();
+  hookMsg(note, 'ok');
+  hookBusy = false; $('writeHooks').disabled = false;
+}
+$('writeHooks').addEventListener('click', writeHooks);
+$('hookStop').addEventListener('click', () => { try { hookCtl && hookCtl.abort(); } catch (e) {} });
+$('hookUndo').addEventListener('click', () => {
+  if (hookBackup === null) return;
+  $('hooks').value = hookBackup; $('hooks').dispatchEvent(new Event('input'));
+  $('hookUndo').hidden = true; hookMsg('Your previous hooks are back.');
+});
+
+/* ---------- caption + hashtag writer ---------- */
+const TAGS = {
+  football: ['football', 'soccer', 'championsleague', 'footballreels', 'transfernews', 'fyp'],
+  gaming: ['gta6', 'gaming', 'grandtheftautovi', 'rockstargames', 'gamingreels', 'gamer'],
+  memes: ['memes', 'funny', 'relatable', 'humor', 'reels', 'fyp'],
+  tech: ['tech', 'technology', 'ai', 'gadgets', 'techreels', 'innovation'],
+  finance: ['finance', 'investing', 'stocks', 'money', 'business', 'financetips'],
+  fitness: ['fitness', 'gym', 'workout', 'fitnessmotivation', 'health', 'gymreels'],
+  other: ['viral', 'reels', 'shorts', 'trending', 'fyp', 'explore']
+};
+const capLines = () => $('captions').value.split('\n').map(x => x.trim()).filter(Boolean);
+const capFor = i => { const l = capLines(); return l.length ? l[Math.min(i, l.length - 1)] : ''; };
+
+/* clean hashtags: lowercase, no punctuation inside, no duplicates, at most 10 */
+function tidyCaption(str) {
+  const seen = new Set(), words = [];
+  let tags = 0;
+  for (const w of String(str).replace(/\s+/g, ' ').trim().split(' ')) {
+    if (w.startsWith('#')) {
+      const t = '#' + w.slice(1).replace(/[^\p{L}\p{N}_]/gu, '').toLowerCase();
+      if (t.length < 2 || seen.has(t) || tags >= 10) continue;
+      seen.add(t); tags++; words.push(t);
+    } else if (w) words.push(w);
+  }
+  return words.join(' ');
+}
+const topicTag = t => { const x = t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ''); return x ? '#' + x : ''; };
+
+function offlineCaptions(n, niche, topic, hooks) {
+  const tags = (TAGS[niche] || TAGS.other).map(x => '#' + x);
+  const tt = topicTag(topic);
+  return Array.from({ length: n }, (_, i) => {
+    const h = (hooks[i] || hooks[hooks.length - 1] || '')
+      .replace(/\p{Extended_Pictographic}/gu, '').replace(/[️‍]/g, '').replace(/\s+/g, ' ').trim();
+    const k = i % tags.length;
+    const chosen = [tt, ...tags.slice(k), ...tags.slice(0, k)].filter(Boolean).slice(0, 6);
+    return tidyCaption((h ? h + ' ' : '') + chosen.join(' '));
+  });
+}
+
+function buildCaptionPrompt(n, niche, topic, nImg, names, hooks) {
+  const label = (NICHES[niche] || NICHES.other).label;
+  const plural = n > 1;
+  return [
+    `You write the post caption (the text under the video) with hashtags for short vertical videos (YouTube Shorts and Instagram Reels) in the "${label}" niche.`,
+    topic ? `The creator says the clips are about: ${topic}` : '',
+    `There ${plural ? 'are ' + n + ' clips' : 'is 1 clip'}. Write exactly ${n} caption${plural ? 's' : ''}, one per clip, in the order of the clips.`,
+    names.length ? `File names in order (they may describe the clip): ${names.map(x => x.slice(0, 120)).join(' | ')}` : '',
+    hooks.length ? `The hook shown on screen for each clip, in order: ${hooks.map(x => x.slice(0, 140)).join(' | ')}` : '',
+    nImg
+      ? `The attached image${nImg > 1 ? 's are' : ' is'} one frame from ${nImg > 1 ? 'each of the first ' + nImg + ' clips, in order' : 'the first clip'}. Make each caption fit what is actually happening in its frame.` + (n > nImg ? ' For the remaining clips use the hook, topic and file names.' : '')
+      : 'You cannot see the clips, so use the hook, the niche, the topic and the file names.',
+    '',
+    'Rules:',
+    '- Each caption is one line: one short casual sentence (under 120 characters) that adds to the hook without repeating it, then a space, then 5 to 8 hashtags.',
+    '- Hashtags: lowercase, no spaces, no punctuation inside a tag. Mix 3 or 4 broad niche tags with 2 to 4 specific tags for this clip. No spammy tags such as #follow4follow or #like4like.',
+    '- Plain text. No emojis and no quotation marks around the caption.',
+    '- Do not identify real people from their faces. Use a person\'s name or tag only if the topic, the file names or the hook give it, or it is written on screen.',
+    '- Never misrepresent the clip. Every caption must be different.',
+    `Reply with only a JSON array of ${n} string${plural ? 's' : ''}.`
+  ].filter(x => x !== '').join('\n');
+}
+
+let capBusy = false, capBackup = null, capCtl = null;
+const capMsg = (t, cls) => { const m = $('capMsg'); m.textContent = t; m.className = 'hint' + (cls ? ' ' + cls : ''); };
+
+async function writeCaptions() {
+  if (capBusy) return;
+  capBusy = true; $('writeCaps').disabled = true;
+  const n = Math.min(12, files.length || Math.max(1, hookLines().length) || 1);
+  const niche = $('niche').value, topic = $('topic').value.trim();
+  const hooks = Array.from({ length: n }, (_, i) => hookFor(i)).filter(Boolean);
+  let lines = null, note = '';
+  capMsg('Thinking up captions...');
+  const sample = await sampleReady;
+  if (sample) {
+    capCtl = new AbortController(); $('capStop').hidden = false;
+    try {
+      let imgs = [];
+      try {
+        const lim = await sample.limits();
+        if (lim && lim.images && files.length) {
+          const k = Math.min(files.length, lim.images.maxCount, 8);
+          for (let i = 0; i < k; i++) { const b = await grabFrame(files[i]); if (b) imgs.push(b); }
+        }
+      } catch (e) { imgs = []; }
+      capMsg(imgs.length ? 'Claude is looking at a frame from each clip...' : 'Claude is writing...');
+      const opts = { cache: false, signal: capCtl.signal };
+      if (imgs.length) opts.images = imgs;
+      const arr = await sample.json(buildCaptionPrompt(n, niche, topic, imgs.length, files.slice(0, n).map(f => f.name), hooks), opts);
+      if (Array.isArray(arr)) lines = arr.map(x => tidyCaption(String(x).replace(/^["'\s]+|["'\s]+$/g, ''))).filter(Boolean).slice(0, n);
+      if (lines && lines.length) note = imgs.length ? 'Written by Claude from a frame of each clip. Edit any line you like.' : 'Written by Claude from your hooks, niche and topic. Edit any line you like.';
+    } catch (e) {
+      if (e && e.code === 'cancelled') { capMsg('Stopped.'); capBusy = false; $('writeCaps').disabled = false; $('capStop').hidden = true; return; }
+      note = `Claude could not be used (${REASON[e && e.code] || 'it is unavailable right now'}), so these come from built-in hashtag sets.`;
+    }
+    $('capStop').hidden = true;
+  } else {
+    note = 'Written from your hooks and built-in hashtag sets. Open this page inside Claude to get captions written from your actual clips.';
+  }
+  if (!lines || !lines.length) lines = offlineCaptions(n, niche, topic, hooks.length ? hooks : ['']);
+  capBackup = $('captions').value;
+  $('captions').value = lines.join('\n');
+  $('captions').dispatchEvent(new Event('input'));
+  $('capUndo').hidden = !capBackup.trim();
+  capMsg(note, 'ok');
+  capBusy = false; $('writeCaps').disabled = false;
+}
+$('writeCaps').addEventListener('click', writeCaptions);
+$('capStop').addEventListener('click', () => { try { capCtl && capCtl.abort(); } catch (e) {} });
+$('capUndo').addEventListener('click', () => {
+  if (capBackup === null) return;
+  $('captions').value = capBackup; $('captions').dispatchEvent(new Event('input'));
+  $('capUndo').hidden = true; capMsg('Your previous captions are back.');
+});
+
+const linkLines = () => $('links').value.split('\n').map(x => x.trim()).filter(Boolean);
+const igText = i => capFor(i);
+const ytTitle = i => hookFor(i).replace(/\s+/g, ' ').trim().slice(0, 100);
+function ytDesc(i) {
+  const parts = [capFor(i)].filter(Boolean);
+  const ln = linkLines();
+  if (ln.length) parts.push(ln.join('\n'));
+  let t = parts.join('\n\n');
+  if ($('addShorts').checked && !/#shorts\b/i.test(t)) t = (t ? t + ' ' : '') + '#Shorts';
+  return t;
+}
+
+async function copyText(text, msgEl) {
+  const say = (t, cls) => { msgEl.textContent = t; msgEl.className = 'r-msg ' + (cls || ''); };
+  try { await navigator.clipboard.writeText(text); say('Copied.', 'ok'); return; } catch (e) {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy'); ta.remove();
+    if (ok) { say('Copied.', 'ok'); return; }
+  } catch (e) {}
+  say('Could not copy automatically. Select the caption text and copy it.', 'err');
+}
+
+/* ---------- init ---------- */
+loadCfg(); syncLabels();
+drawFrame(null, hookFor(0));
+(async () => {
+  try {
+    const saved = await idb.get('logo');
+    if (saved) await useLogo(saved);
+  } catch (e) {}
+  startPreview();
+})();
+if (!window.MediaRecorder) { setStatus('This browser cannot record video. Use Chrome, Edge or Safari 14.1 or newer.', true); $('go').disabled = true; }
+</script>
+
+</body>
+</html>
